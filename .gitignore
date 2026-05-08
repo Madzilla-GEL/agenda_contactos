@@ -1,0 +1,31 @@
+# IntelliJ IDEA
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+
+# Module and project files
+*.iml
+
+# Java build output
+out/
+build/
+target/
+bin/
+*.class
+
+# Package artifacts
+*.jar
+*.war
+*.ear
+!dist/*.jar
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
