@@ -1,216 +1,305 @@
 package interfaz;
 
 import dominio.*;
-import java.io.File;
 import java.util.Scanner;
 
+/**
+ * Interfaz de consola para gestionar libretas y contactos.
+ */
 public class Interfaz {
     private Libreta libreta;
-    public static final String ANSI_RESET = "\u001B[0m";
-    public static final String ANSI_CIAN = "\u001B[36m";
-    public static final String ANSI_AZUL = "\u001B[34m";
-    public static final String ANSI_AMARILLO = "\u001B[33m";
-    public static final String ANSI_MORADO = "\u001B[35m";
-    public static final String ANSI_ROJO = "\u001B[31m";
-    private static final Scanner teclado = new Scanner(System.in);
-    public Interfaz() {}
+    private Idioma idioma = Idioma.ES;
+    private final Scanner teclado = new Scanner(System.in);
 
+    /**
+     * Constructor por defecto.
+     */
+    public Interfaz() {
+    }
 
-    //Métodos de Interfaz
+    /**
+     * Inicia la aplicacion y menus principales.
+     */
     public void ejecutar() {
-        System.out.println("¡Bienvenido/a! ¿En qué libreta quieres trabajar?");
-        String nombreLibreta = teclado.nextLine();
-        teclado.reset();
-
-        File file = new File(nombreLibreta+".ser");
-        if (file.exists()) libreta = Libreta.leer(nombreLibreta);
-        else libreta = new Libreta(nombreLibreta);
-        System.out.println();
-
-        String peticion;
-        do {
-            peticion = leerPeticion();
-        } while (procesandoPeticion(peticion));
-    }
-    public String listaOpciones() {
-        StringBuilder sb = new StringBuilder(ANSI_CIAN+"Lista de opciones de "
-                +ANSI_AMARILLO+libreta.getNombre()+ANSI_RESET+"\n");
-        sb.append("\t1. "+ANSI_CIAN+"añadir"+ANSI_AZUL+" <nombre> <apellido(opcional)> <teléfono>"+ANSI_RESET+": " +
-                        "Añade un contacto a la libreta.\n")
-                .append("\t2. "+ANSI_CIAN+"modificar"+ANSI_AZUL+" <nombre> <apellido(opcional)> <(atributo a modificar)/quitar> <valor/(atributo a quitar)>"+ANSI_RESET+":\n" +
-                        "\t\tCambia un valor para un determinado contacto. Se pueden quitar el apellido y el teléfono.\n")
-                .append("\t3. "+ANSI_CIAN+"borrar"+ANSI_AZUL+" <nombre> <apellido(opcinal)>"+ANSI_RESET+": Borra un contacto de la libreta.\n")
-                .append("\t4. "+ANSI_CIAN+"lista"+ANSI_RESET+": Muestra la lista de contactos.\n")
-                .append("\t5. "+ANSI_MORADO+"cambiarNombre"+ANSI_AZUL+" <nuevo nombre>"+ANSI_RESET+": Cambia el nombre de la libreta.\n")
-                .append("\t6. "+ANSI_MORADO+"grabar"+ANSI_RESET+": Guarda la libreta de contactos.\n")
-                .append("\t7. "+ANSI_MORADO+"borrarLibreta"+ANSI_RESET+": Borra la libreta (Este cambio no puede deshacerse).\n")
-                .append("\t8. "+ANSI_MORADO+"cambiarLibreta"+ANSI_AZUL+" <nombre de la libreta>"+ANSI_RESET+": Cambia la libreta sobre la que se trabaja.\n")
-                .append("\t9. "+ANSI_AMARILLO+"salir"+ANSI_RESET+": Sale del programa.\n")
-                .append(ANSI_ROJO+"Por favor"+ANSI_RESET+", introduzca las instrucciones sin espacios adicionales.\n");
-        return sb.toString();
-    }
-    public String leerPeticion() {
-        System.out.print(listaOpciones()+"Introduce tu petición: ");
-        String entrada = teclado.nextLine();
-        teclado.reset();
-        return entrada;
-    }
-    public boolean procesandoPeticion(String entrada) {
-        String[] peticion = entrada.split("\\s+");
-        if (peticion[0].equalsIgnoreCase("añadir")) return add(peticion);
-        else if (peticion[0].equalsIgnoreCase("modificar") ||
-                peticion[0].equalsIgnoreCase("cambiar")) return modificar(peticion);
-        else if (peticion[0].equalsIgnoreCase("borrar")) return borrar(peticion);
-        else if (peticion[0].equalsIgnoreCase("lista" )) return lista();
-        else if (peticion[0].equalsIgnoreCase("cambiarNombre")) return cambiarNombre(peticion);
-        else if (peticion[0].equalsIgnoreCase("grabar")) return grabar();
-        else if (peticion[0].equalsIgnoreCase("borrarLibreta")) return borrarLibreta();
-        else if (peticion[0].equalsIgnoreCase("cambiarLibreta")) return cambiarLibreta(peticion);
-        else if (peticion[0].equalsIgnoreCase("salir")) {
-            if (confirmacion("¿Quieres guardar los cambios?")) {
-                libreta.grabar();
+        seleccionarIdioma();
+        System.out.println(Mensajes.get(idioma, "welcome"));
+        abrirLibretaInicial();
+        boolean continuar = true;
+        while (continuar) {
+            System.out.println(Mensajes.get(idioma, "mainMenu"));
+            switch (leerOpcion()) {
+                case "1":
+                    menuContactos();
+                    break;
+                case "2":
+                    menuLibreta();
+                    break;
+                case "3":
+                    mostrarContactos();
+                    break;
+                case "4":
+                    guardarLibreta();
+                    break;
+                case "5":
+                    cambiarLibreta();
+                    break;
+                case "6":
+                    seleccionarIdioma();
+                    break;
+                case "0":
+                    continuar = salir();
+                    break;
+                default:
+                    System.out.println(Mensajes.get(idioma, "invalidOption"));
             }
-            System.out.println("Saliendo del programa.");
-            return false;
-        }
-        else {
-            System.out.println("Petición errónea.");
-            System.out.println();
-            return true;
         }
     }
 
+    private void seleccionarIdioma() {
+        System.out.print(Mensajes.get(idioma, "chooseLanguage"));
+        String entrada = teclado.nextLine().trim().toLowerCase();
+        if ("en".equals(entrada)) {
+            idioma = Idioma.EN;
+        } else {
+            idioma = Idioma.ES;
+        }
+    }
 
-    //Peticiones
-    private boolean add(String[] peticion) {
+    private void abrirLibretaInicial() {
+        System.out.print(Mensajes.get(idioma, "askNotebook"));
+        String nombreLibreta = teclado.nextLine().trim();
+        if (Libreta.existeEnDisco(nombreLibreta)) {
+            libreta = Libreta.leer(nombreLibreta);
+        } else {
+            libreta = new Libreta(nombreLibreta);
+        }
+    }
+
+    private void menuContactos() {
+        boolean volver = false;
+        while (!volver) {
+            System.out.println(Mensajes.get(idioma, "contactMenu"));
+            switch (leerOpcion()) {
+                case "1":
+                    anadirContacto();
+                    break;
+                case "2":
+                    modificarContacto();
+                    break;
+                case "3":
+                    borrarContacto();
+                    break;
+                case "0":
+                    volver = true;
+                    break;
+                default:
+                    System.out.println(Mensajes.get(idioma, "invalidOption"));
+            }
+        }
+    }
+
+    private void menuLibreta() {
+        boolean volver = false;
+        while (!volver) {
+            System.out.println(Mensajes.get(idioma, "notebookMenu"));
+            switch (leerOpcion()) {
+                case "1":
+                    renombrarLibreta();
+                    break;
+                case "2":
+                    borrarLibreta();
+                    break;
+                case "0":
+                    volver = true;
+                    break;
+                default:
+                    System.out.println(Mensajes.get(idioma, "invalidOption"));
+            }
+        }
+    }
+
+    private void anadirContacto() {
         try {
-            if (peticion.length <= 3) { //Contacto sin apellido
-                libreta.add(new Contacto(peticion[1], peticion[2]));
-            }
-            else { //Contacto con apellido
-                libreta.add(new Contacto(peticion[1],peticion[2],peticion[3]));
-            }
-        } catch(ArrayIndexOutOfBoundsException e) {
-                /* Dará este error cuando el usuario haya introducido menos o más datos de los necesarios,
-                pues "peticion[]" será más o menos corta que lo que la creación del contacto requiere. */
-            System.out.println("Por favor, introduce la información con los espacios indicados.");
-        }
-        catch (ContactDuplicated e) {
-            System.out.println(e.getMessage());
-        }
-        System.out.println();
-        return true;
-    }
-    public boolean modificar(String[] peticion) {
-        try {
-            if (peticion.length <= 4) //Contacto sin apellido
-                 libreta.modificarContacto(new Contacto(peticion[1]),
-                         new String[]{peticion[2], peticion[3]});
-            else //Contacto con apellido
-                libreta.modificarContacto(new Contacto(peticion[1],peticion[2], ""),
-                        new String[]{peticion[3], peticion[4]});
-        } catch(ArrayIndexOutOfBoundsException e) {
-                /* Dará este error cuando el usuario haya introducido menos o más datos de los necesarios,
-                pues "peticion[]" será más o menos corta que lo que la creación del contacto requiere. */
-            System.out.println("Por favor, introduce la información con los espacios indicados.");
-        }
-        catch(ContactNotFound e) {
-            System.out.println(e.getMessage());
-        }
-        System.out.println();
-        return true;
-    }
-    private boolean borrar(String[] peticion) {
-        try {
-            if (peticion.length <= 2) { //Contacto sin apellido
-                libreta.borrarContacto(new Contacto(peticion[1]));
-            }
-            else { //Contacto con apellido
-                libreta.borrarContacto(new Contacto(peticion[1],peticion[2],""));
-            }
-        }
-        catch(ArrayIndexOutOfBoundsException e) {
-                /* Dará este error cuando el usuario haya introducido menos o más datos de los necesarios,
-                pues "peticion[]" será más o menos corta que lo que la creación del contacto requiere. */
-            System.out.println("Por favor, introduce la información con los espacios indicados.");
-        }
-        catch(ContactNotFound e) {
-            System.out.println(e.getMessage());
-        }
-        System.out.println();
-        return true;
-    }
-    private boolean lista() {
-        System.out.println(libreta+"\n");
-        return true;
-    }
-    private boolean cambiarNombre(String[] peticion) {
-        try {
-            if (confirmacion("¿Quieres cambiar el nombre de " + libreta.getNombre() +
-                    " a " + peticion[1] + "?")) {
-                libreta.setNombre(peticion[1]);
-            }
-        } catch (ArrayIndexOutOfBoundsException e) {
-                /* Dará este error cuando el usuario haya introducido menos o más datos de los necesarios,
-                pues "peticion[]" será más o menos corta que lo que la creación del contacto requiere. */
-            System.out.println("Por favor, introduce la información con los espacios indicados.");
-        }
-        System.out.println();
-        return true;
-    }
-    private boolean grabar() {
-        libreta.grabar();
-        System.out.println();
-        return true;
-    }
-    private boolean borrarLibreta() {
-        if (libreta.borrar()) {
-            System.out.println("¿En qué libreta quieres trabajar?");
-            String nombreLibreta = teclado.nextLine();
-            teclado.reset();
-
-            File file = new File(nombreLibreta+".ser");
-            if (file.exists()) libreta = Libreta.leer(nombreLibreta);
-            else libreta = new Libreta(nombreLibreta);
-        }
-        System.out.println();
-        return true;
-    }
-    private boolean cambiarLibreta (String[] peticion) {
-        try {
-            if (confirmacion("¿Quieres guardar los cambios?")) {
-                libreta.grabar();
+            String nombre = pedirCampo("askName");
+            String apellido = pedirCampo("askSurnameOptional");
+            String telefono = pedirCampo("askPhone");
+            if (nombre.isBlank() || telefono.isBlank()) {
+                System.out.println(Mensajes.get(idioma, "inputError"));
+                return;
             }
 
-            File file = new File(peticion[1] + ".ser");
-            if (file.exists()) {
-                libreta = Libreta.leer(peticion[1]);
+            if (apellido.isBlank()) {
+                libreta.add(new Contacto(nombre, telefono));
             } else {
-                libreta = new Libreta(peticion[1]);
+                libreta.add(new Contacto(nombre, apellido, telefono));
             }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println("Por favor, introduce la información con los espacios indicados.");
+        } catch (ContactDuplicated e) {
+            System.out.println(e.getMessage());
         }
-        System.out.println();
+    }
+
+    private void modificarContacto() {
+        try {
+            String nombre = pedirCampo("askName");
+            String apellido = pedirCampo("askSurnameOptional");
+            String campo = pedirCampo("askField");
+            String valor = pedirCampo("askValue");
+            String remove = pedirCampo("askRemoveField");
+            String instruccion = campo;
+            String valorFinal = valor;
+            if (!remove.equalsIgnoreCase("ninguno") && !remove.equalsIgnoreCase("none") && !remove.isBlank()) {
+                instruccion = idioma == Idioma.EN ? "remove" : "quitar";
+                valorFinal = remove;
+            }
+
+            Contacto base = apellido.isBlank() ? new Contacto(nombre) : new Contacto(nombre, apellido, "");
+            boolean ok = libreta.modificarContacto(base, new String[]{instruccion, valorFinal});
+            if (!ok) {
+                System.out.println(Mensajes.get(idioma, "invalidOption"));
+            }
+        } catch (ContactNotFound e) {
+            System.out.println(e.getMessage());
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println(Mensajes.get(idioma, "inputError"));
+        }
+    }
+
+    private void borrarContacto() {
+        try {
+            String nombre = pedirCampo("askName");
+            String apellido = pedirCampo("askSurnameOptional");
+            Contacto contacto = apellido.isBlank() ? new Contacto(nombre) : new Contacto(nombre, apellido, "");
+            if (confirmacion(pregunta("deleteContact", contacto.toString()))) {
+                libreta.borrarContacto(contacto);
+            }
+        } catch (ContactNotFound e) {
+            System.out.println(e.getMessage());
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println(Mensajes.get(idioma, "inputError"));
+        }
+    }
+
+    private void mostrarContactos() {
+        if (libreta.size() == 0) {
+            System.out.println(Mensajes.get(idioma, "emptyList"));
+        } else {
+            System.out.println(libreta);
+        }
+    }
+
+    private void renombrarLibreta() {
+        String nuevoNombre = pedirCampo("askNotebookRename");
+        if (!nuevoNombre.isBlank() && confirmacion(pregunta("renameNotebook", libreta.getNombre(), nuevoNombre))) {
+            libreta.setNombre(nuevoNombre);
+        }
+    }
+
+    private void guardarLibreta() {
+        if (libreta.existeEnDisco() && !confirmacion(pregunta("overwriteNotebook", libreta.getNombre()))) {
+            return;
+        }
+        libreta.grabar();
+        System.out.println(Mensajes.get(idioma, "saved"));
+    }
+
+    private void borrarLibreta() {
+        if (confirmacion(pregunta("deleteNotebook", libreta.getNombre()))) {
+            libreta.borrar();
+            cambiarLibreta();
+        }
+    }
+
+    private void cambiarLibreta() {
+        if (confirmacion(pregunta("saveBeforeSwitch")) && (!libreta.existeEnDisco()
+                || confirmacion(pregunta("overwriteNotebook", libreta.getNombre())))) {
+            libreta.grabar();
+        }
+        String nueva = pedirCampo("askNotebookSwitch");
+        if (Libreta.existeEnDisco(nueva)) {
+            libreta = Libreta.leer(nueva);
+        } else {
+            libreta = new Libreta(nueva);
+        }
+    }
+
+    private boolean salir() {
+        if (confirmacion(pregunta("saveOnExit")) && (!libreta.existeEnDisco()
+                || confirmacion(pregunta("overwriteNotebook", libreta.getNombre())))) {
+            libreta.grabar();
+        }
+        System.out.println(Mensajes.get(idioma, "goodbye"));
+        return false;
+    }
+
+    private String leerOpcion() {
+        System.out.print(Mensajes.get(idioma, "promptOption"));
+        return teclado.nextLine().trim();
+    }
+
+    private String pedirCampo(String clave) {
+        System.out.print(Mensajes.get(idioma, clave));
+        return teclado.nextLine().trim();
+    }
+
+    /**
+     * Pide confirmacion en consola.
+     *
+     * @param pregunta texto de pregunta.
+     * @return true si confirma.
+     */
+    public boolean confirmacion(String pregunta) {
+        String siNo;
+        do {
+            System.out.print(pregunta + " " + Mensajes.get(idioma, "yesNo"));
+            siNo = teclado.nextLine();
+            if (esNo(siNo)) {
+                return false;
+            }
+            if (!esSi(siNo)) {
+                System.out.println(Mensajes.get(idioma, "invalidOption"));
+            }
+        } while (!esSi(siNo));
         return true;
     }
 
+    private boolean esSi(String entrada) {
+        return entrada.equalsIgnoreCase("si") || entrada.equalsIgnoreCase("s")
+                || entrada.equalsIgnoreCase("yes") || entrada.equalsIgnoreCase("y");
+    }
 
-    //Métodos de utilidad
-    public static boolean confirmacion(String pregunta) {
-        boolean resultado = true; String siNo;
-        do {
-            System.out.println(pregunta+" (si/no): ");
-            siNo = teclado.nextLine();
-            teclado.reset();
+    private boolean esNo(String entrada) {
+        return entrada.equalsIgnoreCase("no") || entrada.equalsIgnoreCase("n");
+    }
 
-            if (siNo.equalsIgnoreCase("no") || siNo.equalsIgnoreCase("n"))
-                resultado = false;
-            else if(!(siNo.equalsIgnoreCase("si") || siNo.equalsIgnoreCase("s")))
-                System.out.println("Respuesta incorrecta, inténtalo de nuevo.");
-
-        } while(!(siNo.equalsIgnoreCase("si") || siNo.equalsIgnoreCase("s") ||
-                siNo.equalsIgnoreCase("no") || siNo.equalsIgnoreCase("n")));
-        return resultado;
+    private String pregunta(String clave, String... valores) {
+        String base;
+        switch (clave) {
+            case "deleteContact":
+                base = idioma == Idioma.EN ? "Delete contact " + valores[0] + "?" : "Borrar contacto " + valores[0] + "?";
+                break;
+            case "renameNotebook":
+                base = idioma == Idioma.EN ? "Rename notebook " + valores[0] + " to " + valores[1] + "?"
+                        : "Cambiar nombre de " + valores[0] + " a " + valores[1] + "?";
+                break;
+            case "overwriteNotebook":
+                base = idioma == Idioma.EN ? "Notebook " + valores[0] + " exists. Overwrite?"
+                        : "La libreta " + valores[0] + " ya existe. Sobrescribir?";
+                break;
+            case "deleteNotebook":
+                base = idioma == Idioma.EN ? "Delete notebook " + valores[0] + "?"
+                        : "Borrar la libreta " + valores[0] + "?";
+                break;
+            case "saveBeforeSwitch":
+                base = idioma == Idioma.EN ? "Save current notebook before switching?"
+                        : "Guardar libreta actual antes de cambiar?";
+                break;
+            case "saveOnExit":
+                base = idioma == Idioma.EN ? "Save changes before exit?"
+                        : "Guardar cambios antes de salir?";
+                break;
+            default:
+                base = Mensajes.get(idioma, "askConfirm");
+        }
+        return base;
     }
 }

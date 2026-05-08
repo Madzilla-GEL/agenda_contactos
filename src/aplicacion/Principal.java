@@ -2,10 +2,15 @@ package aplicacion;
 
 import interfaz.Interfaz;
 
-import java.util.Scanner;
-
-//Queda implementar la función de "ContactNotFound" y "DuplicatedContact"
+/**
+ * Punto de entrada de la aplicacion.
+ */
 public class Principal {
+    /**
+     * Ejecuta la interfaz de consola.
+     *
+     * @param args argumentos de ejecucion.
+     */
     public static void main(String[] args) {
         Interfaz interfaz = new Interfaz();
         interfaz.ejecutar();
